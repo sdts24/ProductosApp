@@ -33,11 +33,11 @@ class _ProductoPageState extends State<ProductoPage> {
         actions: <Widget>[
           IconButton(
             icon: Icon(Icons.photo_size_select_actual),
-            onPressed: _seleccionarFoto,
+            onPressed: seleccionarImagen,
           ),
           IconButton(
             icon: Icon(Icons.camera_alt),
-            onPressed: _tomarFoto,
+            onPressed: _tomarImagen,
           ),
         ],
       ),
@@ -69,7 +69,8 @@ class _ProductoPageState extends State<ProductoPage> {
         textCapitalization: TextCapitalization.sentences,
         decoration: InputDecoration(
             labelText: 'Productos',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
+            border:
+                OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
             prefixIcon: Icon(Icons.person)),
         onSaved: (valor) => producto.titulo = valor,
         validator: (value) {
@@ -124,11 +125,15 @@ class _ProductoPageState extends State<ProductoPage> {
     );
   }
 
-  void _submit() {
+  void _submit() async {
     if (!formKey.currentState.validate()) return;
 
     //Esto va a Disparar los metodos onSave de los TextFormField que se encuentren dentro de ese formulario.
     formKey.currentState.save();
+
+    if ( foto != null ){
+      producto.fotoUrl = await productoProvider.subirImagen(foto); 
+    }
 
     if (producto.id == null) {
       productoProvider.crearProducto(producto);
@@ -156,38 +161,46 @@ class _ProductoPageState extends State<ProductoPage> {
     scaffoldKey.currentState.showSnackBar(snack);
   }
 
-  Widget _mostrarFoto() {
+  _mostrarFoto() {
+
     if (producto.fotoUrl != null) {
-
-      //Esto esta pendiente
-      return Container();
-
-    } else {
-      return Image(
-        image: AssetImage(foto?.path ?? 'assets/original.png'),
+      return FadeInImage(
+        image: NetworkImage( producto.fotoUrl ),
+        placeholder: AssetImage('assets/original.gif'),
         height: 300.0,
         fit: BoxFit.cover,
       );
+    } else {
+      if (foto != null) {
+        return Image.file(
+          foto,
+          fit: BoxFit.cover,
+          height: 300.0,
+        );
+      }
+      return Image.asset('assets/no-image.png');
     }
+
   }
 
-  _seleccionarFoto() async {
-    foto = await ImagePicker.pickImage(source: ImageSource.gallery);
-
-    if (foto != null) {}
-
-    setState(() {});
-  }
-
-  _tomarFoto() async {
-
+  _procesarImagen(ImageSource tipo) async {
     foto = await ImagePicker.pickImage(
-      source: ImageSource.camera,
-      );
+      source: tipo,
+    );
 
-    if (foto != null) {}
+    if (foto != null) {
+      producto.fotoUrl = null;
+    }
 
     setState(() {});
-
   }
+
+  seleccionarImagen() {
+    _procesarImagen(ImageSource.gallery);
+  }
+
+  _tomarImagen() {
+    _procesarImagen(ImageSource.camera);
+  }
+
 }
